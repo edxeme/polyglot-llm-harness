@@ -1,0 +1,53 @@
+    run("hit_returns_value", || {
+        let mut c = LruCache::new(2);
+        c.put(1, 10);
+        assert_eq!(c.get(1), 10, "get(1) after put(1,10)");
+    });
+    run("miss_returns_sentinel", || {
+        assert_eq!(LruCache::new(2).get(42), -1, "get on empty cache");
+    });
+    run("oldest_evicted", || {
+        let mut c = LruCache::new(2);
+        c.put(1, 10);
+        c.put(2, 20);
+        c.put(3, 30);
+        assert_eq!(c.get(1), -1, "get(1) after evicting key 1");
+        assert_eq!(c.get(3), 30, "get(3)");
+    });
+    run("update_refreshes_recency", || {
+        let mut c = LruCache::new(2);
+        c.put(1, 10);
+        c.put(2, 20);
+        c.put(1, 11);
+        c.put(3, 30);
+        assert_eq!(c.get(2), -1, "get(2) should have been evicted");
+        assert_eq!(c.get(1), 11, "get(1) with updated value");
+    });
+    run("get_refreshes_recency", || {
+        let mut c = LruCache::new(2);
+        c.put(1, 10);
+        c.put(2, 20);
+        c.get(1);
+        c.put(3, 30);
+        assert_eq!(c.get(2), -1, "get(2) should have been evicted");
+        assert_eq!(c.get(1), 10, "get(1) kept by the refresh");
+    });
+    run("overwrite_same_key", || {
+        let mut c = LruCache::new(2);
+        c.put(1, 10);
+        c.put(1, 11);
+        assert_eq!(c.get(1), 11, "get(1) after overwrite");
+    });
+    run("capacity_one", || {
+        let mut c = LruCache::new(1);
+        c.put(1, 10);
+        assert_eq!(c.get(1), 10, "get(1)");
+        c.put(2, 20);
+        assert_eq!(c.get(1), -1, "get(1) after eviction");
+        assert_eq!(c.get(2), 20, "get(2)");
+    });
+    run("rejects_zero_capacity", || {
+        expect_panic("zero capacity", || {
+            let _ = LruCache::new(0);
+        });
+    });

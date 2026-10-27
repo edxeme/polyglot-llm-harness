@@ -1,0 +1,48 @@
+        run("within_limit_allows", () -> {
+            RateLimiter rl = new RateLimiter(2, 1000);
+            eq("allow at t=0", true, rl.allow(0));
+            eq("allow at t=10", true, rl.allow(10));
+        });
+        run("exceeds_limit_denies", () -> {
+            RateLimiter rl = new RateLimiter(2, 1000);
+            rl.allow(0);
+            rl.allow(1);
+            eq("third request inside window", false, rl.allow(2));
+        });
+        run("window_slide_allows_again", () -> {
+            RateLimiter rl = new RateLimiter(2, 1000);
+            rl.allow(0);
+            rl.allow(1);
+            eq("third request inside window", false, rl.allow(2));
+            eq("request after the window slid", true, rl.allow(1000));
+        });
+        run("boundary_expiry", () -> {
+            RateLimiter rl = new RateLimiter(2, 1000);
+            eq("allow at t=0", true, rl.allow(0));
+            eq("allow at t=999", true, rl.allow(999));
+            eq("deny at t=999", false, rl.allow(999));
+            eq("t=0 expires exactly at t=1000", true, rl.allow(1000));
+        });
+        run("rejected_not_recorded", () -> {
+            RateLimiter rl = new RateLimiter(2, 1000);
+            eq("allow at t=0", true, rl.allow(0));
+            eq("allow at t=1", true, rl.allow(1));
+            eq("deny at t=500", false, rl.allow(500));
+            eq("allow at t=1000 — the rejected request must not occupy a slot", true, rl.allow(1000));
+        });
+        run("steady_drip", () -> {
+            RateLimiter rl = new RateLimiter(1, 1000);
+            eq("allow at t=0", true, rl.allow(0));
+            eq("deny at t=500", false, rl.allow(500));
+            eq("allow at t=1000", true, rl.allow(1000));
+            eq("deny at t=1500", false, rl.allow(1500));
+        });
+        run("equal_spacing", () -> {
+            RateLimiter rl = new RateLimiter(3, 100);
+            eq("allow at t=0", true, rl.allow(0));
+            eq("allow at t=33", true, rl.allow(33));
+            eq("allow at t=66", true, rl.allow(66));
+            eq("allow at t=100 — first slot free", true, rl.allow(100));
+            eq("allow at t=133 — second slot free", true, rl.allow(133));
+        });
+        run("rejects_zero_limit", () -> expectThrows("zero limit", () -> new RateLimiter(0, 1000)));

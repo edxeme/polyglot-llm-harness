@@ -1,0 +1,50 @@
+    run("within_limit_allows", [] {
+        RateLimiter rl(2, 1000);
+        expect(rl.allow(0), "allow at t=0");
+        expect(rl.allow(10), "allow at t=10");
+    });
+    run("exceeds_limit_denies", [] {
+        RateLimiter rl(2, 1000);
+        (void)rl.allow(0);
+        (void)rl.allow(1);
+        expect(!rl.allow(2), "third request inside window: expected deny");
+    });
+    run("window_slide_allows_again", [] {
+        RateLimiter rl(2, 1000);
+        (void)rl.allow(0);
+        (void)rl.allow(1);
+        expect(!rl.allow(2), "third request inside window: expected deny");
+        expect(rl.allow(1000), "request after the window slid: expected allow");
+    });
+    run("boundary_expiry", [] {
+        RateLimiter rl(2, 1000);
+        expect(rl.allow(0), "allow at t=0");
+        expect(rl.allow(999), "allow at t=999");
+        expect(!rl.allow(999), "deny at t=999");
+        expect(rl.allow(1000), "t=0 expires exactly at t=1000");
+    });
+    run("rejected_not_recorded", [] {
+        RateLimiter rl(2, 1000);
+        expect(rl.allow(0), "allow at t=0");
+        expect(rl.allow(1), "allow at t=1");
+        expect(!rl.allow(500), "deny at t=500");
+        expect(rl.allow(1000), "allow at t=1000 — the rejected request must not occupy a slot");
+    });
+    run("steady_drip", [] {
+        RateLimiter rl(1, 1000);
+        expect(rl.allow(0), "allow at t=0");
+        expect(!rl.allow(500), "deny at t=500");
+        expect(rl.allow(1000), "allow at t=1000");
+        expect(!rl.allow(1500), "deny at t=1500");
+    });
+    run("equal_spacing", [] {
+        RateLimiter rl(3, 100);
+        expect(rl.allow(0), "allow at t=0");
+        expect(rl.allow(33), "allow at t=33");
+        expect(rl.allow(66), "allow at t=66");
+        expect(rl.allow(100), "allow at t=100 — first slot free");
+        expect(rl.allow(133), "allow at t=133 — second slot free");
+    });
+    run("rejects_zero_limit", [] {
+        expect_throws("zero limit", [] { RateLimiter rl(0, 1000); (void)rl; });
+    });

@@ -1,0 +1,26 @@
+    run("overlapping", || {
+        assert_eq!(merge(&[(1, 3), (2, 6), (8, 10), (15, 18)]), vec![(1, 6), (8, 10), (15, 18)]);
+    });
+    run("touching_endpoints", || {
+        assert_eq!(merge(&[(1, 4), (4, 5)]), vec![(1, 5)]);
+    });
+    run("unsorted_input", || {
+        assert_eq!(merge(&[(1, 4), (0, 4)]), vec![(0, 4)]);
+    });
+    run("nested_interval", || {
+        assert_eq!(merge(&[(1, 4), (2, 3)]), vec![(1, 4)]);
+    });
+    run("single_interval", || {
+        assert_eq!(merge(&[(5, 7)]), vec![(5, 7)]);
+    });
+    run("empty_input", || {
+        assert_eq!(merge(&[]), Vec::<(i64, i64)>::new());
+    });
+    run("chain_overlap", || {
+        assert_eq!(merge(&[(2, 3), (1, 2), (0, 1)]), vec![(0, 3)]);
+    });
+    run("rejects_inverted_interval", || {
+        expect_panic("inverted interval", || {
+            let _ = merge(&[(3, 1)]);
+        });
+    });

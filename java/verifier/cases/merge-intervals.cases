@@ -1,0 +1,15 @@
+        run("overlapping", () -> eqDeep("merge", new int[][]{{1,6},{8,10},{15,18}},
+                MergeIntervals.merge(new int[][]{{1,3},{2,6},{8,10},{15,18}})));
+        run("touching_endpoints", () -> eqDeep("merge", new int[][]{{1,5}},
+                MergeIntervals.merge(new int[][]{{1,4},{4,5}})));
+        run("unsorted_input", () -> eqDeep("merge", new int[][]{{0,4}},
+                MergeIntervals.merge(new int[][]{{1,4},{0,4}})));
+        run("nested_interval", () -> eqDeep("merge", new int[][]{{1,4}},
+                MergeIntervals.merge(new int[][]{{1,4},{2,3}})));
+        run("single_interval", () -> eqDeep("merge", new int[][]{{5,7}},
+                MergeIntervals.merge(new int[][]{{5,7}})));
+        run("empty_input", () -> eqDeep("merge", new int[][]{}, MergeIntervals.merge(new int[][]{})));
+        run("chain_overlap", () -> eqDeep("merge", new int[][]{{0,3}},
+                MergeIntervals.merge(new int[][]{{2,3},{1,2},{0,1}})));
+        run("rejects_inverted_interval", () -> expectThrows("inverted interval",
+                () -> MergeIntervals.merge(new int[][]{{3,1}})));

@@ -1,0 +1,52 @@
+    run("within_limit_allows", || {
+        let mut rl = RateLimiter::new(2, 1000);
+        assert!(rl.allow(0), "allow at t=0");
+        assert!(rl.allow(10), "allow at t=10");
+    });
+    run("exceeds_limit_denies", || {
+        let mut rl = RateLimiter::new(2, 1000);
+        rl.allow(0);
+        rl.allow(1);
+        assert!(!rl.allow(2), "third request inside window");
+    });
+    run("window_slide_allows_again", || {
+        let mut rl = RateLimiter::new(2, 1000);
+        rl.allow(0);
+        rl.allow(1);
+        assert!(!rl.allow(2), "third request inside window");
+        assert!(rl.allow(1000), "request after the window slid");
+    });
+    run("boundary_expiry", || {
+        let mut rl = RateLimiter::new(2, 1000);
+        assert!(rl.allow(0), "allow at t=0");
+        assert!(rl.allow(999), "allow at t=999");
+        assert!(!rl.allow(999), "deny at t=999");
+        assert!(rl.allow(1000), "t=0 expires exactly at t=1000");
+    });
+    run("rejected_not_recorded", || {
+        let mut rl = RateLimiter::new(2, 1000);
+        assert!(rl.allow(0), "allow at t=0");
+        assert!(rl.allow(1), "allow at t=1");
+        assert!(!rl.allow(500), "deny at t=500");
+        assert!(rl.allow(1000), "allow at t=1000 — the rejected request must not occupy a slot");
+    });
+    run("steady_drip", || {
+        let mut rl = RateLimiter::new(1, 1000);
+        assert!(rl.allow(0), "allow at t=0");
+        assert!(!rl.allow(500), "deny at t=500");
+        assert!(rl.allow(1000), "allow at t=1000");
+        assert!(!rl.allow(1500), "deny at t=1500");
+    });
+    run("equal_spacing", || {
+        let mut rl = RateLimiter::new(3, 100);
+        assert!(rl.allow(0), "allow at t=0");
+        assert!(rl.allow(33), "allow at t=33");
+        assert!(rl.allow(66), "allow at t=66");
+        assert!(rl.allow(100), "allow at t=100 — first slot free");
+        assert!(rl.allow(133), "allow at t=133 — second slot free");
+    });
+    run("rejects_zero_limit", || {
+        expect_panic("zero limit", || {
+            let _ = RateLimiter::new(0, 1000);
+        });
+    });

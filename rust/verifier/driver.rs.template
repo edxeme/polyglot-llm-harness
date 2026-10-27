@@ -1,0 +1,85 @@
+//! Generated verifier — do not edit by hand.
+//! The harness writes `candidate.rs` next to this driver and compiles the
+//! pair with rustc. Contract: one JSON line per case, then a summary line.
+
+mod candidate;
+
+use candidate::*;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static TOTAL: AtomicU32 = AtomicU32::new(0);
+static PASSED: AtomicU32 = AtomicU32::new(0);
+static LAST_PANIC: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
+fn esc(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 8);
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+fn run(name: &str, f: impl FnOnce()) {
+    let t0 = std::time::Instant::now();
+    let mut status = "pass";
+    let mut detail = String::new();
+    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).is_err() {
+        status = "fail";
+        detail = LAST_PANIC
+            .lock()
+            .unwrap()
+            .take()
+            .unwrap_or_else(|| "assertion failed".to_string());
+    }
+    let ms = t0.elapsed().as_secs_f64() * 1000.0;
+    TOTAL.fetch_add(1, Ordering::SeqCst);
+    if status == "pass" {
+        PASSED.fetch_add(1, Ordering::SeqCst);
+    }
+    println!(
+        "{{\"case\":\"{}\",\"status\":\"{}\",\"ms\":{:.3},\"detail\":\"{}\"}}",
+        esc(name),
+        status,
+        ms,
+        esc(&detail)
+    );
+}
+
+fn expect_panic(what: &str, f: impl FnOnce()) {
+    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).is_ok() {
+        panic!("{what}: expected a panic, none occurred");
+    }
+}
+
+fn main() {
+    std::panic::set_hook(Box::new(|info| {
+        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "assertion failed".to_string()
+        };
+        *LAST_PANIC.lock().unwrap() = Some(msg);
+    }));
+// CASES
+    let total = TOTAL.load(Ordering::SeqCst);
+    let passed = PASSED.load(Ordering::SeqCst);
+    println!(
+        "{{\"summary\":{{\"total\":{},\"passed\":{},\"failed\":{}}}}}",
+        total,
+        passed,
+        total - passed
+    );
+    if passed < total {
+        std::process::exit(1);
+    }
+}

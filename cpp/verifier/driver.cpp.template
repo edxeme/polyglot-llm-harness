@@ -1,0 +1,88 @@
+// Generated verifier — do not edit by hand.
+// The harness writes candidate.hpp next to this driver and compiles the
+// pair with the platform toolchain. Contract: one JSON line per case, then
+// a summary line.
+
+#include "candidate.hpp"
+
+#include <algorithm>
+#include <chrono>
+#include <cstdio>
+#include <exception>
+#include <functional>
+#include <string>
+#include <vector>
+
+static int total = 0;
+static int passed = 0;
+
+static std::string esc(const std::string& s) {
+    char buf[8];
+    std::string out;
+    for (unsigned char c : s) {
+        switch (c) {
+            case '\\': out += "\\\\"; break;
+            case '"': out += "\\\""; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    snprintf(buf, sizeof buf, "\\u%04x", c);
+                    out += buf;
+                } else {
+                    out += static_cast<char>(c);
+                }
+        }
+    }
+    return out;
+}
+
+static void run(const std::string& name, const std::function<void()>& f) {
+    auto t0 = std::chrono::steady_clock::now();
+    const char* status = "pass";
+    std::string detail;
+    try {
+        f();
+    } catch (const std::exception& e) {
+        status = "fail";
+        detail = e.what();
+    } catch (...) {
+        status = "fail";
+        detail = "unknown failure";
+    }
+    double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    total++;
+    if (status[0] == 'p') passed++;
+    printf("{\"case\":\"%s\",\"status\":\"%s\",\"ms\":%.3f,\"detail\":\"%s\"}\n", esc(name).c_str(), status, ms,
+           esc(detail).c_str());
+}
+
+static std::string ivals(const std::vector<std::pair<long long, long long>>& v) {
+    std::string s = "[";
+    for (size_t i = 0; i < v.size(); ++i) {
+        s += "[" + std::to_string(v[i].first) + "," + std::to_string(v[i].second) + "]";
+        if (i + 1 < v.size()) s += ",";
+    }
+    return s + "]";
+}
+
+static void expect(bool ok, const std::string& what) {
+    if (!ok) throw std::runtime_error(what);
+}
+
+static void expect_throws(const std::string& what, const std::function<void()>& f) {
+    bool threw = false;
+    try {
+        f();
+    } catch (...) {
+        threw = true;
+    }
+    if (!threw) throw std::runtime_error(what + ": expected an exception, none thrown");
+}
+
+int main() {
+// CASES
+    printf("{\"summary\":{\"total\":%d,\"passed\":%d,\"failed\":%d}}\n", total, passed, total - passed);
+    return passed < total ? 1 : 0;
+}

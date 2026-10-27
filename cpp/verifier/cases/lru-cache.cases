@@ -1,0 +1,52 @@
+    run("hit_returns_value", [] {
+        LruCache c(2);
+        c.put(1, 10);
+        expect(c.get(1) == 10, "get(1) after put(1,10): expected 10");
+    });
+    run("miss_returns_sentinel", [] {
+        LruCache c(2);
+        expect(c.get(42) == -1, "get on empty cache: expected -1");
+    });
+    run("oldest_evicted", [] {
+        LruCache c(2);
+        c.put(1, 10);
+        c.put(2, 20);
+        c.put(3, 30);
+        expect(c.get(1) == -1, "get(1) after evicting key 1: expected -1");
+        expect(c.get(3) == 30, "get(3): expected 30");
+    });
+    run("update_refreshes_recency", [] {
+        LruCache c(2);
+        c.put(1, 10);
+        c.put(2, 20);
+        c.put(1, 11);
+        c.put(3, 30);
+        expect(c.get(2) == -1, "get(2) should have been evicted: expected -1");
+        expect(c.get(1) == 11, "get(1) with updated value: expected 11");
+    });
+    run("get_refreshes_recency", [] {
+        LruCache c(2);
+        c.put(1, 10);
+        c.put(2, 20);
+        (void)c.get(1);
+        c.put(3, 30);
+        expect(c.get(2) == -1, "get(2) should have been evicted: expected -1");
+        expect(c.get(1) == 10, "get(1) kept by the refresh: expected 10");
+    });
+    run("overwrite_same_key", [] {
+        LruCache c(2);
+        c.put(1, 10);
+        c.put(1, 11);
+        expect(c.get(1) == 11, "get(1) after overwrite: expected 11");
+    });
+    run("capacity_one", [] {
+        LruCache c(1);
+        c.put(1, 10);
+        expect(c.get(1) == 10, "get(1): expected 10");
+        c.put(2, 20);
+        expect(c.get(1) == -1, "get(1) after eviction: expected -1");
+        expect(c.get(2) == 20, "get(2): expected 20");
+    });
+    run("rejects_zero_capacity", [] {
+        expect_throws("zero capacity", [] { LruCache c(0); (void)c; });
+    });
