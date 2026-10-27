@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: build all three harnesses
+        run: make java rust cpp
+
+      - name: smoke every task on every implementation
+        run: |
+          set -e
+          for task in merge-intervals lru-cache rate-limiter; do
+            java -cp java/build dev.edxeme.lmh.Main run "$task" --json > "/tmp/java-$task.json"
+            rust/target/release/lmh run "$task" --json > "/tmp/rust-$task.json"
+            cpp/build/lmh run "$task" --json > "/tmp/cpp-$task.json"
+          done
+
+      - name: report parity (ignore timings and impl labels)
+        run: |
+          set -e
+          norm() { jq -c 'del(.duration_ms) | .impl = "" | .source = "" | .cases = [.cases[] | del(.ms)]' "$1"; }
+          for task in merge-intervals lru-cache rate-limiter; do
+            norm "/tmp/java-$task.json" > /tmp/a
+            norm "/tmp/rust-$task.json" > /tmp/b
+            norm "/tmp/cpp-$task.json" > /tmp/c
+            diff /tmp/a /tmp/b
+            diff /tmp/a /tmp/c
+          done
+
+      - name: buggy candidate must fail on all implementations
+        run: |
+          set -e
+          java -cp java/build dev.edxeme.lmh.Main run lru-cache --candidate examples/buggy-lru/LruCache.java && exit 1 || [ $? -eq 1 ]
+          rust/target/release/lmh run lru-cache --candidate examples/buggy-lru/lru_cache.rs && exit 1 || [ $? -eq 1 ]
+          cpp/build/lmh run lru-cache --candidate examples/buggy-lru/lru_cache.hpp && exit 1 || [ $? -eq 1 ]
