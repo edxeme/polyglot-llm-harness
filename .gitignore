@@ -1,0 +1,18 @@
+# build outputs
+target/
+build/
+java/build/
+*.class
+
+# compiled verifiers
+verifier
+verifier.exe
+lmharness
+lmharness.exe
+
+# harness scratch dirs
+tmp/
+.lmh/
+
+# os / editor
+.DS_Store
