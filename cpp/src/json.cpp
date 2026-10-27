@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <cstdio>
+#include <cstring>
 #include <stdexcept>
 
 namespace lmh {
