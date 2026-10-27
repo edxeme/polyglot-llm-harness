@@ -31,12 +31,26 @@ macro_rules! golden {
     };
 }
 
-pub const ALL: &[TaskSpec] = &[TaskSpec {
-    id: "merge-intervals",
-    candidate_file_name: "candidate.rs",
-    cases_path: "rust/verifier/cases/merge-intervals.cases",
-    golden: golden!("merge_intervals.rs"),
-}];
+pub const ALL: &[TaskSpec] = &[
+    TaskSpec {
+        id: "merge-intervals",
+        candidate_file_name: "candidate.rs",
+        cases_path: "rust/verifier/cases/merge-intervals.cases",
+        golden: golden!("merge_intervals.rs"),
+    },
+    TaskSpec {
+        id: "lru-cache",
+        candidate_file_name: "candidate.rs",
+        cases_path: "rust/verifier/cases/lru-cache.cases",
+        golden: golden!("lru_cache.rs"),
+    },
+    TaskSpec {
+        id: "rate-limiter",
+        candidate_file_name: "candidate.rs",
+        cases_path: "rust/verifier/cases/rate-limiter.cases",
+        golden: golden!("rate_limiter_window.rs"),
+    },
+];
 
 pub fn find(id: &str) -> Option<&'static TaskSpec> {
     ALL.iter().find(|t| t.id == id)
