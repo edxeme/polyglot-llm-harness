@@ -1,16 +1,17 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-// Candidate with a classic LRU bug: get() never refreshes recency and the
-// eviction order is whatever HashMap yields first.
+// Candidate with a classic LRU bug: get() never refreshes recency, and the
+// eviction victim is the lowest key (deterministic — but never the
+// least-recently-used one).
 pub struct LruCache {
     capacity: usize,
-    entries: HashMap<i64, i64>,
+    entries: BTreeMap<i64, i64>,
 }
 
 impl LruCache {
     pub fn new(capacity: usize) -> Self {
         assert!(capacity > 0, "capacity must be positive");
-        LruCache { capacity, entries: HashMap::new() }
+        LruCache { capacity, entries: BTreeMap::new() }
     }
 
     pub fn get(&self, key: i64) -> i64 {
@@ -19,8 +20,8 @@ impl LruCache {
 
     pub fn put(&mut self, key: i64, value: i64) {
         if self.entries.len() == self.capacity && !self.entries.contains_key(&key) {
-            let first = *self.entries.keys().next().unwrap();
-            self.entries.remove(&first);
+            let lowest = *self.entries.keys().next().unwrap();
+            self.entries.remove(&lowest);
         }
         self.entries.insert(key, value);
     }

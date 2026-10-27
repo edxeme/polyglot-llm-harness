@@ -1,11 +1,13 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 #include <unordered_map>
 
 // Candidate with a classic LRU bug: get() never refreshes recency and the
-// eviction order is whatever the unordered_map bucket order yields.
+// eviction victim is the lowest key (deterministic — but never the
+// least-recently-used one).
 class LruCache {
 public:
     explicit LruCache(std::size_t capacity) : capacity_(capacity) {
@@ -19,7 +21,9 @@ public:
 
     void put(long long key, long long value) {
         if (entries_.size() == capacity_ && entries_.find(key) == entries_.end()) {
-            entries_.erase(entries_.begin());
+            auto victim = std::min_element(entries_.begin(), entries_.end(),
+                                           [](const auto& a, const auto& b) { return a.first < b.first; });
+            entries_.erase(victim);
         }
         entries_[key] = value;
     }

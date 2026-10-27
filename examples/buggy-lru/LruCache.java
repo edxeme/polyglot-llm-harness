@@ -1,11 +1,12 @@
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 // Candidate with a classic LRU bug: get() never refreshes recency and the
-// eviction order is whatever HashMap iterates first.
+// eviction victim is the lowest key (deterministic — but never the
+// least-recently-used one).
 public final class LruCache {
 
-    private final Map<Integer, Integer> entries = new HashMap<>();
+    private final Map<Integer, Integer> entries = new TreeMap<>();
     private final int capacity;
 
     public LruCache(int capacity) {
