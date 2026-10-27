@@ -1,0 +1,10 @@
+[package]
+name = "lmh"
+version = "0.1.0"
+edition = "2021"
+description = "polyglot llm verifier harness — rust implementation"
+
+[dependencies]
+
+[profile.release]
+strip = true
